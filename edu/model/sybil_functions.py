@@ -239,6 +239,17 @@ def check_overlap_lst(lst1, lst2):
     return list(set(lst1) & set(lst2))
 
 
+def find_main_wallet(commu_lst, the_weight_df):
+    main = {}
+    for wallet in commu_lst:
+        sum_weight = the_weight_df[
+            (the_weight_df["wallet_a"] == wallet) | (the_weight_df["wallet_b"] == wallet)
+        ]["weight"].sum()
+        main[wallet] = sum_weight
+    main = dict(sorted(main.items(), key=lambda x: x[1], reverse=True))
+    return main
+
+
 # for each community, check how many wallets are sybil wallets
 def check_sybil_community(community_full_lst, sybil_lst):
     community_sybil_condition = {}
@@ -277,3 +288,25 @@ def random_rate(num_1, num_2, full_lst, trials=100):
         similarity_lst.append(similarity)
 
     return np.mean(similarity_lst)
+
+
+def find_transfer_for_wallet(wallet, transfer_df, and_or="or"):
+    if and_or == "or":
+        return transfer_df[
+            (transfer_df["wallet_a"] == wallet) | (transfer_df["wallet_b"] == wallet)
+        ]
+    else:
+        return transfer_df[
+            (transfer_df["wallet_a"] == wallet) & (transfer_df["wallet_b"] == wallet)
+        ]
+
+def find_commu_for_wallet(wallet, community_lst):
+    for i, community in enumerate(community_lst):
+        if wallet in community:
+            return i
+    return None
+
+def uncommon_wallets(lst_1, lst_2):
+    # find wallets in lst1 but not in lst2
+    diff = set(lst_1).difference(set(lst_2))
+    return list(diff)
