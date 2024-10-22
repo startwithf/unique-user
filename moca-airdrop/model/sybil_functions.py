@@ -134,24 +134,58 @@ def create_community(df, method="surprise", resolution=1):
         communities = algorithms.leiden(G, weights="weight")
 
     communities_list = communities.communities
-    # communities_list = sorted(communities_list, key=lambda x: x[0])
     print(f"Number of communities detected: {len(communities_list)}")
     print("-")
-    print(
-        f"Average community size: {np.mean([len(community) for community in communities_list])}"
-    )
-    print(
-        f"Max community size: {np.max([len(community) for community in communities_list])}"
-    )
-    print(
-        f"Min community size: {np.min([len(community) for community in communities_list])}"
-    )
-
+    print(f"Average community size: {np.mean([len(c) for c in communities_list])}")
+    print(f"Max community size: {np.max([len(c) for c in communities_list])}")
+    print(f"Min community size: {np.min([len(c) for c in communities_list])}")
     print("")
 
     communities_list = sorted(communities_list, key=lambda x: len(x), reverse=True)
 
-    return communities_list
+    return communities_list, G
+
+   
+def calculate_likelihoods(communities_list, G):
+    wallet_likelihood = {}
+    partition = {node: idx for idx, community in enumerate(communities_list) for node in community}
+    m = G.size(weight="weight")
+
+    # Precompute degrees
+    node_degrees = {node: G.degree(node, weight='weight') for node in G.nodes}
+    community_degrees = {idx: sum(node_degrees[n] for n in community) for idx, community in enumerate(communities_list)}
+
+    for community in communities_list:
+        community_set = set(community)
+        for wallet in community:
+            community_id = partition[wallet]
+            wallet_neighbors = set(G.neighbors(wallet))
+            internal_neighbors = wallet_neighbors.intersection(community_set)
+
+            # Edge Density
+            total_degree = len(wallet_neighbors)
+            internal_degree = len(internal_neighbors)
+            edge_density = internal_degree / total_degree if total_degree > 0 else 0
+
+            # Modularity Contribution
+            k_i_in = sum(G[wallet][neighbor].get("weight", 1) for neighbor in internal_neighbors)
+            k_i = node_degrees[wallet]
+            sum_in = community_degrees[community_id]
+            modularity_contribution = (k_i_in / m) - ((k_i * sum_in) / (2 * m * m))
+
+            # Jaccard Similarity
+            intersection = len(internal_neighbors)
+            union = total_degree + len(community_set) - internal_degree - 1
+            jaccard_similarity = intersection / union if union > 0 else 0
+
+            wallet_likelihood[wallet] = {
+                "community": community_id,
+                "edge_density": edge_density,
+                "modularity_contribution": modularity_contribution,
+                "jaccard_similarity": jaccard_similarity
+            }
+
+    return wallet_likelihood
 
 
 def community_visualization(df):
@@ -243,11 +277,12 @@ def check_overlap_lst(lst1, lst2):
 def find_main_wallet(commu_lst, the_weight_df):
     # Filter the DataFrame once for relevant wallets
     filtered_df = the_weight_df[
-        the_weight_df["wallet_a"].isin(commu_lst) | the_weight_df["wallet_b"].isin(commu_lst)
+        the_weight_df["wallet_a"].isin(commu_lst)
+        | the_weight_df["wallet_b"].isin(commu_lst)
     ]
     # Calculate total transaction volume for each wallet
-    check_wallet_a = filtered_df['wallet_a'].value_counts()
-    check_wallet_b = filtered_df['wallet_b'].value_counts()
+    check_wallet_a = filtered_df["wallet_a"].value_counts()
+    check_wallet_b = filtered_df["wallet_b"].value_counts()
     check_wallet = check_wallet_a.add(check_wallet_b, fill_value=0)
     check_wallet = check_wallet.sort_values(ascending=False)
     return check_wallet
@@ -327,6 +362,7 @@ def filter_community_lst(community_lst, wallet_lst):
 def expand_community_lst(community_lst, wallet_lst):
     # Create a set of all items in community_lst for O(1) lookups
     community_set = {item for sublist in community_lst for item in sublist}
+    print(len(list(community_set)))
     # Extend with wallets not in any community
     community_lst.extend([[item] for item in wallet_lst if item not in community_set])
     return community_lst
