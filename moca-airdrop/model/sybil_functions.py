@@ -217,6 +217,14 @@ def community_visualization(df):
     node_x = [pos[node][0] for node in Gt.nodes()]
     node_y = [pos[node][1] for node in Gt.nodes()]
     node_z = [pos[node][2] for node in Gt.nodes()]
+    
+    # Determine node colors based on the DataFrame
+    node_colors = []
+    for node in Gt.nodes():
+        if df.loc[df['wallet_a'] == node, 'if_wallet_a'].any() or df.loc[df['wallet_b'] == node, 'if_wallet_b'].any():
+            node_colors.append('green')  # True condition
+        else:
+            node_colors.append('red')    # False condition
 
     # Create Plotly figure
     fig = go.Figure()
@@ -228,7 +236,7 @@ def community_visualization(df):
             y=edge_y,
             z=edge_z,
             mode="lines",
-            line=dict(color="black", width=5),
+            line=dict(color="black", width=2),
             text=edge_text,
             hoverinfo="text",
         )
@@ -241,7 +249,7 @@ def community_visualization(df):
             y=node_y,
             z=node_z,
             mode="markers",
-            marker=dict(size=5, color="blue"),
+            marker=dict(size=5, color=node_colors),
             text=list(Gt.nodes()),  # Show node labels on hover
             hoverinfo="text",
             textfont=dict(size=5),
