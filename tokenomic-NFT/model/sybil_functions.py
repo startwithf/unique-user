@@ -7,6 +7,8 @@ from cdlib import algorithms
 import plotly.graph_objects as go
 from tqdm import tqdm
 import random
+import requests
+import re
 
 
 def read_from_multiple_excels(path, name_lst):
@@ -108,7 +110,21 @@ def stretched_sigmoid(x, s=1):
     return 1 / (1 + np.exp(-x * s))
 
 
-######################  Community Related Functions  ######################
+######################  Contract/Ops Functions  ######################
+
+def check_contract(wallet_address, bsc_key, polygon_key, eth_key):  
+    bsc_contract_link = f"https://api.bscscan.com/api?module=contract&action=getabi&address={wallet_address}&apikey={bsc_key}"
+    polygon_contract_link = f"https://api.polygonscan.com/api?module=contract&action=getabi&address={wallet_address}&apikey={polygon_key}"
+    eth_contract_link = f"https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getabi&address={wallet_address}&apikey={eth_key}"  
+
+    endpoint_lst = [eth_contract_link, bsc_contract_link, polygon_contract_link]
+    for endpoint in endpoint_lst:
+        response = requests.get(endpoint).json()
+        if response['status'] == '1':
+            print(f' contract on {re.findall(r"https://api\.([a-z]+)\.", endpoint)[0]}')
+            return True
+    return False
+
 
 
 def create_community(df, method="surprise", resolution=1):

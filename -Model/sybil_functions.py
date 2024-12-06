@@ -62,32 +62,27 @@ def count_pairs(df, w1_col, w2_col):
     return pairs.value_counts()
 
 
-
 ######################  Contract/Ops Functions  ######################
 
-def check_contract(wallet_address, bsc_key_ = bsc_key, polygon_key_ = polygon_key, eth_key_ = eth_key):  
+
+def check_contract(
+    wallet_address, bsc_key_=bsc_key, polygon_key_=polygon_key, eth_key_=eth_key
+):
     bsc_contract_link = f"https://api.bscscan.com/api?module=contract&action=getabi&address={wallet_address}&apikey={bsc_key_}"
     polygon_contract_link = f"https://api.polygonscan.com/api?module=contract&action=getabi&address={wallet_address}&apikey={polygon_key_}"
-    eth_contract_link = f"https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getabi&address={wallet_address}&apikey={eth_key_}"  
+    eth_contract_link = f"https://api.etherscan.io/v2/api?chainid=1&module=contract&action=getabi&address={wallet_address}&apikey={eth_key_}"
 
     endpoint_lst = [eth_contract_link, bsc_contract_link, polygon_contract_link]
     for endpoint in endpoint_lst:
         response = requests.get(endpoint).json()
-        if response['status'] == '1':
-            print(f' contract on {re.findall(r"https://api\.([a-z]+)\.", endpoint)[0]}')
+        if response["status"] == "1":
+            print(
+                f'{wallet_address} is a contract on {re.findall(r"https://api\.([a-z]+)\.", endpoint)[0]}'
+            )
             return True
+    
+    print(f"{wallet_address} is not a contract")
     return False
-
-
-
-
-
-
-
-
-
-
-
 
 
 ######################  weight Related Functions  ######################
@@ -139,6 +134,7 @@ def plot_weight_cumulative_dist(df, figsize=(15, 3), bins=100):
 def stretched_sigmoid(x, s=1):
     return 1 / (1 + np.exp(-x * s))
 
+
 ######################  Community Related Functions  ######################
 
 
@@ -176,15 +172,22 @@ def create_community(df, method="surprise", resolution=1):
 
     return communities_list, G
 
-   
+
 def calculate_likelihoods(communities_list, G):
     wallet_likelihood = {}
-    partition = {node: idx for idx, community in enumerate(communities_list) for node in community}
+    partition = {
+        node: idx
+        for idx, community in enumerate(communities_list)
+        for node in community
+    }
     m = G.size(weight="weight")
 
     # Precompute degrees
-    node_degrees = {node: G.degree(node, weight='weight') for node in G.nodes}
-    community_degrees = {idx: sum(node_degrees[n] for n in community) for idx, community in enumerate(communities_list)}
+    node_degrees = {node: G.degree(node, weight="weight") for node in G.nodes}
+    community_degrees = {
+        idx: sum(node_degrees[n] for n in community)
+        for idx, community in enumerate(communities_list)
+    }
 
     for community in communities_list:
         community_set = set(community)
@@ -199,7 +202,9 @@ def calculate_likelihoods(communities_list, G):
             edge_density = internal_degree / total_degree if total_degree > 0 else 0
 
             # Modularity Contribution
-            k_i_in = sum(G[wallet][neighbor].get("weight", 1) for neighbor in internal_neighbors)
+            k_i_in = sum(
+                G[wallet][neighbor].get("weight", 1) for neighbor in internal_neighbors
+            )
             k_i = node_degrees[wallet]
             sum_in = community_degrees[community_id]
             modularity_contribution = (k_i_in / m) - ((k_i * sum_in) / (2 * m * m))
@@ -213,7 +218,7 @@ def calculate_likelihoods(communities_list, G):
                 "community": community_id,
                 "edge_density": edge_density,
                 "modularity_contribution": modularity_contribution,
-                "jaccard_similarity": jaccard_similarity
+                "jaccard_similarity": jaccard_similarity,
             }
 
     return wallet_likelihood
@@ -248,14 +253,17 @@ def community_visualization(df):
     node_x = [pos[node][0] for node in Gt.nodes()]
     node_y = [pos[node][1] for node in Gt.nodes()]
     node_z = [pos[node][2] for node in Gt.nodes()]
-    
+
     # Determine node colors based on the DataFrame
     node_colors = []
     for node in Gt.nodes():
-        if df.loc[df['wallet_a'] == node, 'if_wallet_a'].any() or df.loc[df['wallet_b'] == node, 'if_wallet_b'].any():
-            node_colors.append('green')  # True condition
+        if (
+            df.loc[df["wallet_a"] == node, "if_wallet_a"].any()
+            or df.loc[df["wallet_b"] == node, "if_wallet_b"].any()
+        ):
+            node_colors.append("green")  # True condition
         else:
-            node_colors.append('red')    # False condition
+            node_colors.append("red")  # False condition
 
     # Create Plotly figure
     fig = go.Figure()
