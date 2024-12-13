@@ -79,10 +79,9 @@ def check_contract(
             print(
                 f'{wallet_address} is a contract on {re.findall(r"https://api\.([a-z]+)\.", endpoint)[0]}'
             )
-            return True
-    
-    print(f"{wallet_address} is not a contract")
-    return False
+            return wallet_address
+        
+    return None
 
 
 ######################  weight Related Functions  ######################
