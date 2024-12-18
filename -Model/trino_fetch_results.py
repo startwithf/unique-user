@@ -119,7 +119,6 @@ def check_frequent_wallets(
 
 ## monthly stats ##
 
-
 def query_wallet_monthly_info(table_name, w_lst, start_date_, end_date_):
     query_wallet_filter = ", ".join([f"'{w}'" for w in w_lst])
     if start_date_ or end_date_:
@@ -281,6 +280,23 @@ def wallets_last_info(w_lst, start_date_ = None, end_date_ = None, tables_=last_
 
 
 ##### Playground #####
+
+def query_test(w_lst):
+    query_wallet_filter = ", ".join([f"'{w}'" for w in w_lst])
+    query = f"""
+    select 
+        *
+    from "polygon_address_monthly_stats_full"
+    where 
+        address IN ({query_wallet_filter})
+    """
+    return query_trino_admin(query)
+
+
+
+
+
+
 def query_trino(w, trace_back_days):
     trace_back_days = int(trace_back_days)
     if trace_back_days <= 0:

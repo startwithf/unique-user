@@ -22,3 +22,14 @@ last_stats_tables = [
     "bsc_address_last_stats_full",
     "polygon_address_last_stats_full",
 ]
+
+trino_data_column_names = [
+        "active_days",
+        "total_gas_fee_in_usd",
+        "txn_count",
+        "wallets_interacted",
+        "last_txn_date_int",
+        "last_txn_date",
+        "start_date",
+        "end_date",
+    ]
